@@ -16,14 +16,22 @@ const userSchema = new Schema({
   },
   password: {
     type: String,
-    required: true,
     minlength: 5,
+    //  required: true,
+    required: function (){
+      return !this.githubId
+    }
   },
+//OAuth: 
+  githubId:{
+    type: String,
+    unique: true,
+  }
 });
 
 // hash user password
 userSchema.pre("save", async function (next) {
-  if (this.isNew || this.isModified("password")) {
+  if (this.password &&(this.isNew || this.isModified("password"))) {
     const saltRounds = 10;
     this.password = await bcrypt.hash(this.password, saltRounds);
   }
@@ -33,7 +41,7 @@ userSchema.pre("save", async function (next) {
 
 // custom method to compare and validate password for logging in
 userSchema.methods.isCorrectPassword = async function (password) {
-  return bcrypt.compare(password, this.password);
+  return this.password? bcrypt.compare(password, this.password): false;
 };
 
 const User = mongoose.model("User", userSchema);
